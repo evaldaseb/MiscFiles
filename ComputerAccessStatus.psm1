@@ -1,4 +1,4 @@
-﻿function Get-ComputerAccessStatus {
+function Get-ComputerAccessStatus {
 [Cmdletbinding()]
 param (
 	[Parameter(Mandatory)]
@@ -21,12 +21,18 @@ if ($ping -eq 'ok')
 {
   # $HostName = "$computer.gstt.local"
 	$HostIP = Test-Connection $computer -Count 1 | Select-Object ProtocolAddress
-	$HostResolved = [System.Net.Dns]::GetHostbyAddress($HostIP.ProtocolAddress) | Select-Object HostName
-	if ($HostResolved.HostName.TrimEnd('.gstt.local') -ne $computer) 
+	$ErrorActionPreference = 'SilentlyContinue'
+  $HostResolved = [System.Net.Dns]::GetHostEntry($HostIP.ProtocolAddress) | Select-Object HostName
+  $ErrorActionPreference = 'Continue'
+	if ($HostResolved -ne $null)
   {
-	  # Write-Warning "DNS problem, resolves to $($HostResolved.HostName)"
-		$HR = $($HostResolved.HostName)
-	}
+    if ($HostResolved.HostName.TrimEnd('.gstt.local') -ne $computer) 
+    {
+	    # Write-Warning "DNS problem, resolves to $($HostResolved.HostName)"
+		  $HR = $($HostResolved.HostName)
+	  }
+  }
+  
 		
 	if ($HR) 
   {
@@ -37,7 +43,15 @@ if ($ping -eq 'ok')
   } # end if HR we have dns problem
 	else 
   {
-	  $dns = 'ok'
+	  if ($HostResolved -eq $null)
+    {
+      $dns = ''
+    }
+    else
+    {
+      $dns = 'ok'
+    }
+    
 		Write-verbose 'dns ok'
         
     #region wmi
